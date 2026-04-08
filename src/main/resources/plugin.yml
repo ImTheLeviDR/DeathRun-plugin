@@ -1,0 +1,13 @@
+name: DeathRun
+version: '${project.version}'
+main: org.thelevidr.deathrun.DeathRun
+
+commands:
+  start:
+    description: Start the game
+    usage: /start <map name>
+    permission: deathrun.start
+  dr:
+    description: DeathRun admin command
+    usage: /dr <subcommand>
+    permission: deathrun.admin
