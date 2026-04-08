@@ -1,5 +1,5 @@
 name: DeathRun
-version: '${project.version}'
+version: 1.0-SNAPSHOT
 main: org.thelevidr.deathrun.DeathRun
 
 commands:

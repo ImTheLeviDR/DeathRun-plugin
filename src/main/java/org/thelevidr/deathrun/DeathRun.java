@@ -26,11 +26,15 @@ public final class DeathRun extends JavaPlugin implements CommandExecutor, Liste
 
     private FileConfiguration config;
     private List<EffectPad> effectPads = new ArrayList<>();
+    private long gameStartTime = 0;
+    private Location finishMin, finishMax;
+    private Location spawnLocation;
 
     @Override
     public void onEnable() {
         loadConfig();
         loadAllEffectPads();
+        loadSpawnLocation();
         getCommand("start").setExecutor(this);
         getCommand("dr").setExecutor(this);
         getServer().getPluginManager().registerEvents(this, this);
@@ -38,11 +42,72 @@ public final class DeathRun extends JavaPlugin implements CommandExecutor, Liste
 
     private void loadAllEffectPads() {
         effectPads.clear();
+        finishMin = null;
+        finishMax = null;
         if (!config.contains("map")) return;
 
         for (String mapName : config.getConfigurationSection("map").getKeys(false)) {
             String path = "map." + mapName;
             loadEffectPads(path);
+            loadFinishRegion(path);
+        }
+    }
+
+    private void loadFinishRegion(String path) {
+        ConfigurationSection finish1 = config.getConfigurationSection(path + ".finish.1");
+        ConfigurationSection finish2 = config.getConfigurationSection(path + ".finish.2");
+        if (finish1 != null && finish2 != null) {
+            Location loc1 = getLocationFromSection(finish1);
+            Location loc2 = getLocationFromSection(finish2);
+            if (loc1 != null && loc2 != null) {
+                finishMin = new Location(loc1.getWorld(),
+                        Math.min(loc1.getBlockX(), loc2.getBlockX()),
+                        Math.min(loc1.getBlockY(), loc2.getBlockY()),
+                        Math.min(loc1.getBlockZ(), loc2.getBlockZ()));
+                finishMax = new Location(loc1.getWorld(),
+                        Math.max(loc1.getBlockX(), loc2.getBlockX()),
+                        Math.max(loc1.getBlockY(), loc2.getBlockY()),
+                        Math.max(loc1.getBlockZ(), loc2.getBlockZ()));
+            }
+        }
+    }
+
+    private void loadSpawnLocation() {
+        spawnLocation = null;
+        if (!config.contains("map")) return;
+        
+        for (String mapName : config.getConfigurationSection("map").getKeys(false)) {
+            String path = "map." + mapName + ".spawn";
+            if (!config.contains(path + ".x") || !config.contains(path + ".y") || 
+                !config.contains(path + ".z") || !config.contains(path + ".world") ||
+                !config.contains(path + ".facing")) {
+                getLogger().severe("Missing spawn configuration for map: " + mapName);
+                return;
+            }
+            
+            World world = getServer().getWorld(config.getString(path + ".world"));
+            if (world == null) {
+                getLogger().severe("Invalid world in spawn config: " + config.getString(path + ".world"));
+                return;
+            }
+            
+            double x = config.getDouble(path + ".x");
+            double y = config.getDouble(path + ".y");
+            double z = config.getDouble(path + ".z");
+            String facingStr = config.getString(path + ".facing").toLowerCase();
+            
+            spawnLocation = new Location(world, x, y, z);
+            
+            float yaw = 0;
+            switch (facingStr) {
+                case "north": yaw = 180; break;
+                case "south": yaw = 0; break;
+                case "east": yaw = -90; break;
+                case "west": yaw = 90; break;
+                default: getLogger().warning("Invalid facing value: " + facingStr + ", defaulting to north"); yaw = 180;
+            }
+            spawnLocation.setYaw(yaw);
+            return;
         }
     }
 
@@ -64,6 +129,26 @@ public final class DeathRun extends JavaPlugin implements CommandExecutor, Liste
             if (args[0].equalsIgnoreCase("reload")) {
                 loadConfig();
                 loadAllEffectPads();
+                loadSpawnLocation();
+
+                boolean hasAnyMap = config.contains("map");
+                boolean hasValidMap = false;
+
+                if (hasAnyMap) {
+                    for (String mapName : config.getConfigurationSection("map").getKeys(false)) {
+                        String path = "map." + mapName;
+                        if (config.contains(path + ".glass.1") && config.contains(path + ".glass.2")) {
+                            hasValidMap = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (!hasValidMap) {
+                    sender.sendMessage("§cError: No finish or glass coordinates set in config.");
+                    return true;
+                }
+
                 sender.sendMessage("§aConfig reloaded!");
                 return true;
             }
@@ -88,11 +173,9 @@ public final class DeathRun extends JavaPlugin implements CommandExecutor, Liste
 
         if (!config.contains(path + ".name")) {
             player.sendMessage("§cMap not found: " + mapName);
-            getLogger().warning("Map not found: " + path + ".name");
             return true;
         }
 
-        getLogger().info("Found map " + mapName + ", loading effects...");
         ConfigurationSection glass1 = config.getConfigurationSection(path + ".glass.1");
         ConfigurationSection glass2 = config.getConfigurationSection(path + ".glass.2");
 
@@ -111,10 +194,10 @@ public final class DeathRun extends JavaPlugin implements CommandExecutor, Liste
 
         setBlocksInRegion(loc1, loc2, Material.getMaterial("STAINED_GLASS"), (byte) 5);
 
+        loadConfig();
         effectPads.clear();
         loadEffectPads(path);
-        getLogger().info("Loaded " + effectPads.size() + " effect pads for map " + mapName);
-        getLogger().info("Loaded " + effectPads.size() + " effect pads for map " + mapName);
+        loadFinishRegion(path);
 
         startCountdown(loc1, loc2);
         return true;
@@ -156,9 +239,42 @@ public final class DeathRun extends JavaPlugin implements CommandExecutor, Liste
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent event) {
         if (event.isCancelled()) return;
-        if (effectPads.isEmpty()) return;
+        if (event.getFrom().getBlockX() == event.getTo().getBlockX() &&
+                event.getFrom().getBlockY() == event.getTo().getBlockY() &&
+                event.getFrom().getBlockZ() == event.getTo().getBlockZ()) return;
 
         Player player = event.getPlayer();
+
+        if (gameStartTime > 0 && finishMin != null && finishMax != null) {
+            Location playerLoc = player.getLocation();
+
+            if (playerLoc.getWorld().equals(finishMin.getWorld()) &&
+                    playerLoc.getBlockX() >= finishMin.getBlockX() && playerLoc.getBlockX() <= finishMax.getBlockX() &&
+                    playerLoc.getBlockY() >= finishMin.getBlockY() && playerLoc.getBlockY() <= finishMax.getBlockY() &&
+                    playerLoc.getBlockZ() >= finishMin.getBlockZ() && playerLoc.getBlockZ() <= finishMax.getBlockZ()) {
+
+                Block block = playerLoc.getBlock();
+                Block blockBelow = playerLoc.subtract(0, 1, 0).getBlock();
+
+                if (block.getType() == Material.PORTAL || blockBelow.getType() == Material.PORTAL) {
+
+                    long elapsed = System.currentTimeMillis() - gameStartTime;
+                    long minutes = (elapsed / 60000) % 60;
+                    long seconds = (elapsed / 1000) % 60;
+                    long millis = elapsed % 1000;
+
+                    if (spawnLocation != null) {
+                        player.teleport(spawnLocation);
+                    }
+                    player.sendMessage("§aFinish! Time: §e" + 
+                            String.format("%02d:%02d:%03d", minutes, seconds, millis));
+                    return;
+                }
+            }
+        }
+
+        if (effectPads.isEmpty()) return;
+
         Block blockBelow = player.getLocation().subtract(0, 1, 0).getBlock();
 
         for (EffectPad pad : effectPads) {
@@ -250,7 +366,7 @@ public final class DeathRun extends JavaPlugin implements CommandExecutor, Liste
                         player.sendTitle("§aRUN!", "", 0, 20, 0);
                     }
                     setBlocksInRegion(loc1, loc2, Material.AIR, (byte) 0);
-                    effectPads.clear();
+                    gameStartTime = System.currentTimeMillis();
                 }, 20L);
             }, 20L);
         }, 20L);
