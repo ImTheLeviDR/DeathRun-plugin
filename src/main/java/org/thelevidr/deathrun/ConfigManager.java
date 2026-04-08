@@ -40,8 +40,12 @@ public class ConfigManager {
 
     public void loadAllEffectPads() {
         effectPads.clear();
-        finishMin = null;
-        finishMax = null;
+        finishMinX = 0;
+        finishMinY = 0;
+        finishMinZ = 0;
+        finishMaxX = 0;
+        finishMaxY = 0;
+        finishMaxZ = 0;
         if (!config.contains("map")) return;
 
         for (String mapName : config.getConfigurationSection("map").getKeys(false)) {
