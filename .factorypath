@@ -1,0 +1,23 @@
+<factorypath>
+    <factorypathentry kind="VARJAR" id="M2_REPO/com/destroystokyo/paper/paper-api/1.12.2-R0.1-SNAPSHOT/paper-api-1.12.2-R0.1-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="VARJAR" id="M2_REPO/com/mojang/authlib/1.5.25/authlib-1.5.25.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="VARJAR" id="M2_REPO/commons-codec/commons-codec/1.10/commons-codec-1.10.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="VARJAR" id="M2_REPO/commons-io/commons-io/2.4/commons-io-2.4.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="VARJAR" id="M2_REPO/org/apache/commons/commons-lang3/3.5/commons-lang3-3.5.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="VARJAR" id="M2_REPO/org/apache/logging/log4j/log4j-api/2.8.1/log4j-api-2.8.1.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="VARJAR" id="M2_REPO/org/apache/logging/log4j/log4j-core/2.8.1/log4j-core-2.8.1.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="VARJAR" id="M2_REPO/commons-lang/commons-lang/2.6/commons-lang-2.6.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="VARJAR" id="M2_REPO/com/googlecode/json-simple/json-simple/1.1.1/json-simple-1.1.1.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="VARJAR" id="M2_REPO/junit/junit/4.10/junit-4.10.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="VARJAR" id="M2_REPO/org/hamcrest/hamcrest-core/1.1/hamcrest-core-1.1.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="VARJAR" id="M2_REPO/com/google/code/findbugs/jsr305/1.3.9/jsr305-1.3.9.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="VARJAR" id="M2_REPO/com/google/guava/guava/21.0/guava-21.0.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="VARJAR" id="M2_REPO/com/google/code/gson/gson/2.8.0/gson-2.8.0.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="VARJAR" id="M2_REPO/org/yaml/snakeyaml/1.19/snakeyaml-1.19.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="VARJAR" id="M2_REPO/net/md-5/bungeecord-chat/1.12-SNAPSHOT/bungeecord-chat-1.12-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="VARJAR" id="M2_REPO/org/slf4j/slf4j-api/1.7.25/slf4j-api-1.7.25.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="VARJAR" id="M2_REPO/org/ow2/asm/asm/6.1.1/asm-6.1.1.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="VARJAR" id="M2_REPO/org/ow2/asm/asm-commons/6.1.1/asm-commons-6.1.1.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="VARJAR" id="M2_REPO/org/ow2/asm/asm-tree/6.1.1/asm-tree-6.1.1.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="VARJAR" id="M2_REPO/org/ow2/asm/asm-analysis/6.1.1/asm-analysis-6.1.1.jar" enabled="true" runInBatchMode="false"/>
+</factorypath>
