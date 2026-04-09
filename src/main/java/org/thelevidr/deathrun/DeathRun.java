@@ -1,7 +1,9 @@
 package org.thelevidr.deathrun;
 
 import org.bukkit.Location;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.Map;
 
@@ -36,6 +38,17 @@ public final class DeathRun extends JavaPlugin {
 
         playerListener = new PlayerListener(configManager, gameManager, mapRecognizer);
         getServer().getPluginManager().registerEvents(playerListener, this);
+
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                for (Player player : getServer().getOnlinePlayers()) {
+                    player.setMaxHealth(20.0);
+                    player.setHealth(player.getMaxHealth());
+                    player.setFoodLevel(20);
+                }
+            }
+        }.runTaskTimer(this, 0L, 1L);
     }
 
     @Override
