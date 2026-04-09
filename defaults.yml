@@ -1,5 +1,5 @@
 map:
-  world:
+  DR_HauntedManor:
     name: "Haunted Manor"
     spawn:
       x: -209.5
