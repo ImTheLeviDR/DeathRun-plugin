@@ -1,10 +1,15 @@
 package org.thelevidr.deathrun;
 
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.potion.PotionEffect;
 
 import java.util.HashMap;
@@ -14,11 +19,42 @@ import java.util.Map;
 public class PlayerListener implements Listener {
     private final ConfigManager configManager;
     private final GameManager gameManager;
+    private final MapRecognizer mapRecognizer;
     private final Map<String, Integer> playerPadCache = new HashMap<>();
 
-    public PlayerListener(ConfigManager configManager, GameManager gameManager) {
+    public PlayerListener(ConfigManager configManager, GameManager gameManager, MapRecognizer mapRecognizer) {
         this.configManager = configManager;
         this.gameManager = gameManager;
+        this.mapRecognizer = mapRecognizer;
+    }
+
+    @EventHandler
+    public void onPlayerJoin(PlayerJoinEvent event) {
+        Player player = event.getPlayer();
+        
+        ItemStack resetItem = new ItemStack(Material.INK_SACK, 1, (short) 1);
+        ItemMeta meta = resetItem.getItemMeta();
+        meta.setDisplayName("§cReset");
+        resetItem.setItemMeta(meta);
+        
+        player.getInventory().setItem(0, resetItem);
+    }
+
+    @EventHandler
+    public void onPlayerInteract(PlayerInteractEvent event) {
+        if (event.getAction().name().contains("RIGHT")) {
+            ItemStack item = event.getItem();
+            if (item != null && item.getType() == Material.INK_SACK && item.getDurability() == 1) {
+                ItemMeta meta = item.getItemMeta();
+                if (meta != null && meta.hasDisplayName() && meta.getDisplayName().equals("§cReset")) {
+                    Player player = event.getPlayer();
+                    Location spawn = mapRecognizer.getSpawnLocation(player.getWorld());
+                    if (spawn != null) {
+                        player.teleport(spawn);
+                    }
+                }
+            }
+        }
     }
 
     @EventHandler

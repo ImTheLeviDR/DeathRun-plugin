@@ -10,7 +10,9 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ConfigManager {
     private final JavaPlugin plugin;
@@ -241,5 +243,24 @@ public class ConfigManager {
     public boolean hasGlassLocations(String mapName) {
         String path = "map." + mapName;
         return config.contains(path + ".glass.origin");
+    }
+
+    public List<String> getAllMapNames() {
+        if (!config.contains("map")) return new ArrayList<>();
+        return new ArrayList<>(config.getConfigurationSection("map").getKeys(false));
+    }
+
+    public Map<String, String> getAllMapWorlds() {
+        Map<String, String> result = new HashMap<>();
+        if (!config.contains("map")) return result;
+        
+        for (String mapName : config.getConfigurationSection("map").getKeys(false)) {
+            String path = "map." + mapName;
+            if (config.contains(path + ".spawn.world")) {
+                String worldName = config.getString(path + ".spawn.world");
+                result.put(mapName, worldName);
+            }
+        }
+        return result;
     }
 }

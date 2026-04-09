@@ -8,10 +8,12 @@ import org.bukkit.entity.Player;
 public class DeathRunCommand implements CommandExecutor {
     private final ConfigManager configManager;
     private final GameManager gameManager;
+    private final MapRecognizer mapRecognizer;
 
-    public DeathRunCommand(ConfigManager configManager, GameManager gameManager) {
+    public DeathRunCommand(ConfigManager configManager, GameManager gameManager, MapRecognizer mapRecognizer) {
         this.configManager = configManager;
         this.gameManager = gameManager;
+        this.mapRecognizer = mapRecognizer;
     }
 
     @Override
@@ -58,7 +60,20 @@ public class DeathRunCommand implements CommandExecutor {
         Player player = (Player) sender;
 
         if (args.length == 0) {
-            player.sendMessage("§cPlease specify the map. /start <map name>");
+            String worldName = player.getWorld().getName();
+            String mapName = mapRecognizer.getMapName(worldName);
+            
+            if (mapName == null) {
+                player.sendMessage("§cCould not detect map. Please specify: /start <map name>");
+                return true;
+            }
+            
+            if (!configManager.hasGlassLocations(mapName)) {
+                player.sendMessage("§cMap '" + mapName + "' does not have glass locations defined.");
+                return true;
+            }
+            
+            gameManager.startGame(mapName);
             return true;
         }
 
