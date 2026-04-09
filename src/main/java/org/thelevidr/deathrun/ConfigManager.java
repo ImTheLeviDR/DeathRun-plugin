@@ -49,6 +49,8 @@ public class ConfigManager {
 
     public void reloadAll() {
         loadConfig();
+        defaultsConfig = null;
+        mergedConfig = null;
         loadDefaultsConfig();
         checkForConflicts();
         loadAllEffectPads();
