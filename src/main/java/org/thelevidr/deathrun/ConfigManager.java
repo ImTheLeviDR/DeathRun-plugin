@@ -8,15 +8,24 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.InputStreamReader;
+import java.io.StringReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class ConfigManager {
     private final JavaPlugin plugin;
     private FileConfiguration config;
+    private FileConfiguration defaultsConfig;
+    private FileConfiguration mergedConfig;
     private List<EffectPad> effectPads = new ArrayList<>();
     private int finishMinX, finishMaxX, finishMinY, finishMaxY, finishMinZ, finishMaxZ;
     private boolean hasFinishRegion = false;
@@ -40,7 +49,70 @@ public class ConfigManager {
 
     public void reloadAll() {
         loadConfig();
+        loadDefaultsConfig();
+        checkForConflicts();
         loadAllEffectPads();
+    }
+
+    private void loadDefaultsConfig() {
+        defaultsConfig = null;
+        try {
+            URL url = new URL("https://raw.githubusercontent.com/ImTheLeviDR/DeathRun-plugin/refs/heads/master/defaults.yml");
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+            connection.setConnectTimeout(5000);
+            connection.setReadTimeout(5000);
+            connection.setRequestProperty("User-Agent", "DeathRun-Plugin");
+
+            int responseCode = connection.getResponseCode();
+            if (responseCode == 200) {
+                StringBuilder content = new StringBuilder();
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        content.append(line).append("\n");
+                    }
+                }
+                defaultsConfig = YamlConfiguration.loadConfiguration(new java.io.StringReader(content.toString()));
+                plugin.getLogger().info("Loaded default maps from GitHub.");
+            } else {
+                plugin.getLogger().warning("Failed to fetch defaults.yml: HTTP " + responseCode);
+            }
+            connection.disconnect();
+        } catch (Exception e) {
+            plugin.getLogger().warning("Failed to load defaults.yml: " + e.getMessage());
+        }
+    }
+
+    private void checkForConflicts() {
+        if (defaultsConfig == null || !defaultsConfig.contains("map")) return;
+        if (!config.contains("map")) return;
+
+        Set<String> defaultsMaps = new HashSet<>(defaultsConfig.getConfigurationSection("map").getKeys(false));
+        Set<String> customMaps = new HashSet<>(config.getConfigurationSection("map").getKeys(false));
+
+        defaultsMaps.retainAll(customMaps);
+        if (!defaultsMaps.isEmpty()) {
+            plugin.getLogger().severe("ERROR: Map name conflict(s) found: " + defaultsMaps +
+                ". Remove these maps from your config.yml or use different names for custom maps.");
+        }
+    }
+
+    private FileConfiguration getMergedConfig() {
+        if (mergedConfig == null) {
+            mergedConfig = new YamlConfiguration();
+            if (defaultsConfig != null && defaultsConfig.contains("map")) {
+                for (String key : defaultsConfig.getConfigurationSection("map").getKeys(false)) {
+                    mergedConfig.set("map." + key, defaultsConfig.getConfigurationSection("map." + key));
+                }
+            }
+            if (config.contains("map")) {
+                for (String key : config.getConfigurationSection("map").getKeys(false)) {
+                    mergedConfig.set("map." + key, config.getConfigurationSection("map." + key));
+                }
+            }
+        }
+        return mergedConfig;
     }
 
     public void loadAllEffectPads() {
@@ -51,9 +123,10 @@ public class ConfigManager {
         finishMaxX = 0;
         finishMaxY = 0;
         finishMaxZ = 0;
-        if (!config.contains("map")) return;
+        FileConfiguration merged = getMergedConfig();
+        if (!merged.contains("map")) return;
 
-        for (String mapName : config.getConfigurationSection("map").getKeys(false)) {
+        for (String mapName : merged.getConfigurationSection("map").getKeys(false)) {
             String path = "map." + mapName;
             loadEffectPads(path);
             loadFinishRegion(path);
@@ -61,8 +134,9 @@ public class ConfigManager {
     }
 
     private void loadFinishRegion(String path) {
-        ConfigurationSection finish1 = config.getConfigurationSection(path + ".finish.1");
-        ConfigurationSection finish2 = config.getConfigurationSection(path + ".finish.2");
+        FileConfiguration merged = getMergedConfig();
+        ConfigurationSection finish1 = merged.getConfigurationSection(path + ".finish.1");
+        ConfigurationSection finish2 = merged.getConfigurationSection(path + ".finish.2");
         if (finish1 != null && finish2 != null) {
             Location loc1 = getLocationFromSection(finish1);
             Location loc2 = getLocationFromSection(finish2);
@@ -80,24 +154,25 @@ public class ConfigManager {
 
     public void loadSpawnLocation(String mapName) {
         spawnLocation = null;
+        FileConfiguration merged = getMergedConfig();
         String path = "map." + mapName + ".spawn";
-        if (!config.contains(path + ".x") || !config.contains(path + ".y") ||
-            !config.contains(path + ".z") || !config.contains(path + ".world") ||
-            !config.contains(path + ".facing")) {
+        if (!merged.contains(path + ".x") || !merged.contains(path + ".y") ||
+            !merged.contains(path + ".z") || !merged.contains(path + ".world") ||
+            !merged.contains(path + ".facing")) {
             plugin.getLogger().severe("Missing spawn configuration for map: " + mapName);
             return;
         }
 
-        World world = plugin.getServer().getWorld(config.getString(path + ".world"));
+        World world = plugin.getServer().getWorld(merged.getString(path + ".world"));
         if (world == null) {
-            plugin.getLogger().severe("Invalid world in spawn config: " + config.getString(path + ".world"));
+            plugin.getLogger().severe("Invalid world in spawn config: " + merged.getString(path + ".world"));
             return;
         }
 
-        double x = config.getDouble(path + ".x");
-        double y = config.getDouble(path + ".y");
-        double z = config.getDouble(path + ".z");
-        String facingStr = config.getString(path + ".facing").toLowerCase();
+        double x = merged.getDouble(path + ".x");
+        double y = merged.getDouble(path + ".y");
+        double z = merged.getDouble(path + ".z");
+        String facingStr = merged.getString(path + ".facing").toLowerCase();
 
         spawnLocation = new Location(world, x, y, z);
 
@@ -113,6 +188,7 @@ public class ConfigManager {
     }
 
     public void loadMapData(String mapName) {
+        FileConfiguration merged = getMergedConfig();
         String path = "map." + mapName;
         effectPads.clear();
         loadEffectPads(path);
@@ -122,17 +198,18 @@ public class ConfigManager {
     }
 
     private void loadGlassData(String path) {
+        FileConfiguration merged = getMergedConfig();
         glassOrigin = null;
         glassConstant = 1;
         glassParam1 = 5;
         glassParam2 = 5;
         
-        ConfigurationSection originSection = config.getConfigurationSection(path + ".glass.origin");
+        ConfigurationSection originSection = merged.getConfigurationSection(path + ".glass.origin");
         if (originSection != null) {
             glassOrigin = getLocationFromSection(originSection);
-            glassConstant = config.getInt(path + ".glass.constant", 1);
-            glassParam1 = config.getInt(path + ".glass.param1", 5);
-            glassParam2 = config.getInt(path + ".glass.param2", 5);
+            glassConstant = merged.getInt(path + ".glass.constant", 1);
+            glassParam1 = merged.getInt(path + ".glass.param1", 5);
+            glassParam2 = merged.getInt(path + ".glass.param2", 5);
         }
     }
 
@@ -142,7 +219,8 @@ public class ConfigManager {
     public Location getGlassOrigin() { return glassOrigin; }
 
     private void loadEffectPads(String path) {
-        ConfigurationSection effects = config.getConfigurationSection(path + ".effects");
+        FileConfiguration merged = getMergedConfig();
+        ConfigurationSection effects = merged.getConfigurationSection(path + ".effects");
         if (effects == null) return;
 
         for (String effectType : effects.getKeys(false)) {
@@ -187,12 +265,13 @@ public class ConfigManager {
     }
 
     public Location getLocationFromConfig(String path) {
-        ConfigurationSection section = config.getConfigurationSection(path);
+        FileConfiguration merged = getMergedConfig();
+        ConfigurationSection section = merged.getConfigurationSection(path);
         return section != null ? getLocationFromSection(section) : null;
     }
 
     public FileConfiguration getConfig() {
-        return config;
+        return getMergedConfig();
     }
 
     public List<EffectPad> getEffectPads() {
@@ -226,10 +305,11 @@ public class ConfigManager {
     }
 
     public boolean hasValidMap() {
-        if (!config.contains("map")) return false;
-        for (String mapName : config.getConfigurationSection("map").getKeys(false)) {
+        FileConfiguration merged = getMergedConfig();
+        if (!merged.contains("map")) return false;
+        for (String mapName : merged.getConfigurationSection("map").getKeys(false)) {
             String path = "map." + mapName;
-            if (config.contains(path + ".glass.origin")) {
+            if (merged.contains(path + ".glass.origin")) {
                 return true;
             }
         }
@@ -237,27 +317,31 @@ public class ConfigManager {
     }
 
     public boolean hasMap(String mapName) {
-        return config.contains("map." + mapName + ".name");
+        FileConfiguration merged = getMergedConfig();
+        return merged.contains("map." + mapName + ".name");
     }
 
     public boolean hasGlassLocations(String mapName) {
+        FileConfiguration merged = getMergedConfig();
         String path = "map." + mapName;
-        return config.contains(path + ".glass.origin");
+        return merged.contains(path + ".glass.origin");
     }
 
     public List<String> getAllMapNames() {
-        if (!config.contains("map")) return new ArrayList<>();
-        return new ArrayList<>(config.getConfigurationSection("map").getKeys(false));
+        FileConfiguration merged = getMergedConfig();
+        if (!merged.contains("map")) return new ArrayList<>();
+        return new ArrayList<>(merged.getConfigurationSection("map").getKeys(false));
     }
 
     public Map<String, String> getAllMapWorlds() {
         Map<String, String> result = new HashMap<>();
-        if (!config.contains("map")) return result;
+        FileConfiguration merged = getMergedConfig();
+        if (!merged.contains("map")) return result;
         
-        for (String mapName : config.getConfigurationSection("map").getKeys(false)) {
+        for (String mapName : merged.getConfigurationSection("map").getKeys(false)) {
             String path = "map." + mapName;
-            if (config.contains(path + ".spawn.world")) {
-                String worldName = config.getString(path + ".spawn.world");
+            if (merged.contains(path + ".spawn.world")) {
+                String worldName = merged.getString(path + ".spawn.world");
                 result.put(mapName, worldName);
             }
         }
