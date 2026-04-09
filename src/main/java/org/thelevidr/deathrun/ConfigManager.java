@@ -19,6 +19,10 @@ public class ConfigManager {
     private int finishMinX, finishMaxX, finishMinY, finishMaxY, finishMinZ, finishMaxZ;
     private boolean hasFinishRegion = false;
     private Location spawnLocation;
+    private int glassConstant = 1;
+    private int glassParam1 = 5;
+    private int glassParam2 = 5;
+    private Location glassOrigin;
 
     public ConfigManager(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -35,7 +39,6 @@ public class ConfigManager {
     public void reloadAll() {
         loadConfig();
         loadAllEffectPads();
-        loadSpawnLocation();
     }
 
     public void loadAllEffectPads() {
@@ -73,43 +76,38 @@ public class ConfigManager {
         }
     }
 
-    public void loadSpawnLocation() {
+    public void loadSpawnLocation(String mapName) {
         spawnLocation = null;
-        if (!config.contains("map")) return;
-
-        for (String mapName : config.getConfigurationSection("map").getKeys(false)) {
-            String path = "map." + mapName + ".spawn";
-            if (!config.contains(path + ".x") || !config.contains(path + ".y") ||
-                !config.contains(path + ".z") || !config.contains(path + ".world") ||
-                !config.contains(path + ".facing")) {
-                plugin.getLogger().severe("Missing spawn configuration for map: " + mapName);
-                return;
-            }
-
-            World world = plugin.getServer().getWorld(config.getString(path + ".world"));
-            if (world == null) {
-                plugin.getLogger().severe("Invalid world in spawn config: " + config.getString(path + ".world"));
-                return;
-            }
-
-            double x = config.getDouble(path + ".x");
-            double y = config.getDouble(path + ".y");
-            double z = config.getDouble(path + ".z");
-            String facingStr = config.getString(path + ".facing").toLowerCase();
-
-            spawnLocation = new Location(world, x, y, z);
-
-            float yaw = 0;
-            switch (facingStr) {
-                case "north": yaw = 180; break;
-                case "south": yaw = 0; break;
-                case "east": yaw = -90; break;
-                case "west": yaw = 90; break;
-                default: plugin.getLogger().warning("Invalid facing value: " + facingStr + ", defaulting to north"); yaw = 180;
-            }
-            spawnLocation.setYaw(yaw);
+        String path = "map." + mapName + ".spawn";
+        if (!config.contains(path + ".x") || !config.contains(path + ".y") ||
+            !config.contains(path + ".z") || !config.contains(path + ".world") ||
+            !config.contains(path + ".facing")) {
+            plugin.getLogger().severe("Missing spawn configuration for map: " + mapName);
             return;
         }
+
+        World world = plugin.getServer().getWorld(config.getString(path + ".world"));
+        if (world == null) {
+            plugin.getLogger().severe("Invalid world in spawn config: " + config.getString(path + ".world"));
+            return;
+        }
+
+        double x = config.getDouble(path + ".x");
+        double y = config.getDouble(path + ".y");
+        double z = config.getDouble(path + ".z");
+        String facingStr = config.getString(path + ".facing").toLowerCase();
+
+        spawnLocation = new Location(world, x, y, z);
+
+        float yaw = 0;
+        switch (facingStr) {
+            case "north": yaw = 180; break;
+            case "south": yaw = 0; break;
+            case "east": yaw = -90; break;
+            case "west": yaw = 90; break;
+            default: plugin.getLogger().warning("Invalid facing value: " + facingStr + ", defaulting to north"); yaw = 180;
+        }
+        spawnLocation.setYaw(yaw);
     }
 
     public void loadMapData(String mapName) {
@@ -117,8 +115,29 @@ public class ConfigManager {
         effectPads.clear();
         loadEffectPads(path);
         loadFinishRegion(path);
-        loadSpawnLocation();
+        loadSpawnLocation(mapName);
+        loadGlassData(path);
     }
+
+    private void loadGlassData(String path) {
+        glassOrigin = null;
+        glassConstant = 1;
+        glassParam1 = 5;
+        glassParam2 = 5;
+        
+        ConfigurationSection originSection = config.getConfigurationSection(path + ".glass.origin");
+        if (originSection != null) {
+            glassOrigin = getLocationFromSection(originSection);
+            glassConstant = config.getInt(path + ".glass.constant", 1);
+            glassParam1 = config.getInt(path + ".glass.param1", 5);
+            glassParam2 = config.getInt(path + ".glass.param2", 5);
+        }
+    }
+
+    public int getGlassConstant() { return glassConstant; }
+    public int getGlassParam1() { return glassParam1; }
+    public int getGlassParam2() { return glassParam2; }
+    public Location getGlassOrigin() { return glassOrigin; }
 
     private void loadEffectPads(String path) {
         ConfigurationSection effects = config.getConfigurationSection(path + ".effects");
@@ -208,7 +227,7 @@ public class ConfigManager {
         if (!config.contains("map")) return false;
         for (String mapName : config.getConfigurationSection("map").getKeys(false)) {
             String path = "map." + mapName;
-            if (config.contains(path + ".glass.1") && config.contains(path + ".glass.2")) {
+            if (config.contains(path + ".glass.origin")) {
                 return true;
             }
         }
@@ -221,6 +240,6 @@ public class ConfigManager {
 
     public boolean hasGlassLocations(String mapName) {
         String path = "map." + mapName;
-        return config.contains(path + ".glass.1") && config.contains(path + ".glass.2");
+        return config.contains(path + ".glass.origin");
     }
 }

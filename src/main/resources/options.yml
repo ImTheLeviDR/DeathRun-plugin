@@ -1,51 +1,74 @@
 map:
   test:
-    name: "Test Map"
+    name: "Haunted Manor"
     spawn:
-      x: 0
-      y: 64
-      z: 0
+      x: -209.5
+      y: 10
+      z: 3.5
       world: "world"
-      facing: "north"
+      facing: "west"
     glass:
+      origin:
+        x: -213
+        y: 10
+        z: -2
+        world: "world"
+      constant: 1
+      param1: 8
+      param2: 8
+    finish:
       1:
-        x: 15
-        y: 34
-        z: 37
+        x: -368
+        y: 25
+        z: 127
         world: "world"
       2:
-        x: 15
-        y: 31
-        z: 31
+        x: -368
+        y: 27
+        z: 120
         world: "world"
     effects:
-      speed:
-        1:
-          pos:
-            1:
-              x: 15
-              y: 34
-              z: 37
-              world: "world"
-            2:
-              x: 15
-              y: 31
-              z: 31
-              world: "world"
-          amplifier: 2
-          duration: 2
       jump:
         1:
           pos:
             1:
-              x: 15
-              y: 34
-              z: 37
+              x: -261
+              y: 17
+              z: 42
               world: "world"
             2:
-              x: 15
-              y: 31
-              z: 31
+              x: -264
+              y: 17
+              z: 45
               world: "world"
-          amplifier: 2
-          duration: 2
+          amplifier: 12
+          duration: 1
+        2:
+          pos:
+            1:
+              x: -168
+              y: 31
+              z: 107
+              world: "world"
+            2:
+              x: -164
+              y: 31
+              z: 108
+              world: "world"
+          amplifier: 8
+          duration: 4
+      speed:
+        1:
+          pos:
+            1:
+              x: -328
+              y: 24
+              z: 120
+              world: "world"
+            2:
+              x: -327
+              y: 24
+              z: 127
+              world: "world"
+          amplifier: 12
+          duration: 4

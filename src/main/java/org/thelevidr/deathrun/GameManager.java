@@ -2,6 +2,7 @@ package org.thelevidr.deathrun;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -11,8 +12,10 @@ public class GameManager {
     private final ConfigManager configManager;
     private long gameStartTime = 0;
     private boolean isGameRunning = false;
-    private Location glassLoc1;
-    private Location glassLoc2;
+    private Location glassOrigin;
+    private int glassConstant;
+    private int glassParam1;
+    private int glassParam2;
 
     public GameManager(JavaPlugin plugin, ConfigManager configManager) {
         this.plugin = plugin;
@@ -22,14 +25,16 @@ public class GameManager {
     public void startGame(String mapName) {
         String path = "map." + mapName;
 
-        glassLoc1 = configManager.getLocationFromConfig(path + ".glass.1");
-        glassLoc2 = configManager.getLocationFromConfig(path + ".glass.2");
-
-        if (glassLoc1 == null || glassLoc2 == null) return;
-
-        setBlocksInRegion(glassLoc1, glassLoc2, Material.getMaterial("STAINED_GLASS"), (byte) 5);
-
         configManager.loadMapData(mapName);
+        
+        glassOrigin = configManager.getGlassOrigin();
+        glassConstant = configManager.getGlassConstant();
+        glassParam1 = configManager.getGlassParam1();
+        glassParam2 = configManager.getGlassParam2();
+
+        if (glassOrigin == null) return;
+
+        setBlocksByConstant(glassOrigin, glassConstant, glassParam1, glassParam2, Material.getMaterial("STAINED_GLASS"), (byte) 5);
 
         startCountdown();
     }
@@ -56,7 +61,9 @@ public class GameManager {
                     for (Player player : plugin.getServer().getOnlinePlayers()) {
                         player.sendTitle("§aRUN!", "", 0, 20, 0);
                     }
-                    setBlocksInRegion(glassLoc1, glassLoc2, Material.AIR, (byte) 0);
+                    if (glassOrigin != null) {
+                        setBlocksByConstant(glassOrigin, glassConstant, glassParam1, glassParam2, Material.AIR, (byte) 0);
+                    }
                     gameStartTime = System.currentTimeMillis();
                     isGameRunning = true;
                 }, 20L);
@@ -79,6 +86,49 @@ public class GameManager {
                     block.setType(material);
                     if (material != Material.AIR) {
                         block.setData(data);
+                    }
+                }
+            }
+        }
+    }
+
+    private void setBlocksByConstant(Location origin, int constant, int param1, int param2, Material material, byte data) {
+        if (origin == null) return;
+        
+        int x = origin.getBlockX();
+        int y = origin.getBlockY();
+        int z = origin.getBlockZ();
+        World world = origin.getWorld();
+
+        boolean addingGlass = (material != Material.AIR);
+
+        for (int i = 0; i < param1; i++) {
+            for (int j = 0; j < param2; j++) {
+                int bx = x, by = y, bz = z;
+                switch (constant) {
+                    case 1:
+                        by = y + i;
+                        bz = z + j;
+                        break;
+                    case 2:
+                        bx = x + i;
+                        bz = z + j;
+                        break;
+                    case 3:
+                        bx = x + i;
+                        by = y + j;
+                        break;
+                }
+                Block block = world.getBlockAt(bx, by, bz);
+                
+                if (addingGlass) {
+                    if (block.getType() == Material.AIR || block.getType() == Material.STAINED_GLASS) {
+                        block.setType(material);
+                        block.setData(data);
+                    }
+                } else {
+                    if (block.getType() == Material.STAINED_GLASS) {
+                        block.setType(Material.AIR);
                     }
                 }
             }
