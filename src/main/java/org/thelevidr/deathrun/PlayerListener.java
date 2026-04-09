@@ -45,10 +45,17 @@ public class PlayerListener implements Listener {
         String world = toLoc.getWorld().getName();
         
         int x = toLoc.getBlockX();
-        int y = toLoc.getBlockY();
+        int y = toLoc.getBlockY() - 1;
         int z = toLoc.getBlockZ();
         
-        int toPadIndex = getPadIndex(effectPads, world, x, y, z);
+        int toPadIndex = -1;
+        for (int i = 0; i < effectPads.size(); i++) {
+            if (effectPads.get(i).contains(world, x, y, z)) {
+                toPadIndex = i;
+                break;
+            }
+        }
+        
         Integer cachedPad = playerPadCache.get(playerId);
         
         if (toPadIndex >= 0 && (cachedPad == null || cachedPad != toPadIndex)) {
