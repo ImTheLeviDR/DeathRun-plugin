@@ -45,6 +45,13 @@ public class GameManager {
     }
 
     private void startCountdown() {
+        Location spawn = configManager.getSpawnLocation();
+        for (Player player : plugin.getServer().getOnlinePlayers()) {
+            if (spawn != null && player.getLocation().distance(spawn) > 10) {
+                player.teleport(spawn);
+            }
+        }
+
         for (Player player : plugin.getServer().getOnlinePlayers()) {
             player.sendTitle("§a3", "", 0, 20, 0);
         }
