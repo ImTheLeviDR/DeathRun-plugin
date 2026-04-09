@@ -144,13 +144,14 @@ public class GameManager {
         
         if (!configManager.isInFinishRegion(playerLoc)) return false;
 
-        int px = playerLoc.getBlockX();
-        int py = playerLoc.getBlockY() - 1;
-        int pz = playerLoc.getBlockZ();
+        int x = playerLoc.getBlockX();
+        int y = playerLoc.getBlockY();
+        int z = playerLoc.getBlockZ();
         
-        Block blockBelow = playerLoc.getWorld().getBlockAt(px, py, pz);
+        Block blockAt = playerLoc.getWorld().getBlockAt(x, y, z);
+        Block blockBelow = playerLoc.getWorld().getBlockAt(x, y - 1, z);
 
-        if (blockBelow.getType() == Material.PORTAL) {
+        if (blockAt.getType() == Material.PORTAL || blockBelow.getType() == Material.PORTAL) {
             finishPlayer(player);
             return true;
         }
