@@ -1,5 +1,6 @@
 package org.thelevidr.deathrun;
 
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -32,6 +33,7 @@ public class PlayerListener implements Listener {
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
+        player.setGameMode(GameMode.ADVENTURE);
         
         ItemStack resetItem = new ItemStack(Material.INK_SACK, 1, (short) 1);
         ItemMeta meta = resetItem.getItemMeta();

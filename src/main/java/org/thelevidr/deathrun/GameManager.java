@@ -10,19 +10,26 @@ import org.bukkit.plugin.java.JavaPlugin;
 public class GameManager {
     private final JavaPlugin plugin;
     private final ConfigManager configManager;
+    private PersonalBestManager pbManager;
     private long gameStartTime = 0;
     private boolean isGameRunning = false;
     private Location glassOrigin;
     private int glassConstant;
     private int glassParam1;
     private int glassParam2;
+    private String currentMapName;
 
     public GameManager(JavaPlugin plugin, ConfigManager configManager) {
         this.plugin = plugin;
         this.configManager = configManager;
     }
 
+    public void setPbManager(PersonalBestManager pbManager) {
+        this.pbManager = pbManager;
+    }
+
     public void startGame(String mapName) {
+        this.currentMapName = mapName;
         String path = "map." + mapName;
 
         configManager.loadMapData(mapName);
@@ -175,11 +182,26 @@ public class GameManager {
         if (spawnLocation != null) {
             player.teleport(spawnLocation);
         }
-        player.sendMessage("§aFinish! Time: §e" +
-                String.format("%02d:%02d:%03d", minutes, seconds, millis));
+
+        boolean isNewPb = false;
+        if (pbManager != null && currentMapName != null) {
+            Long existingPb = pbManager.getPersonalBest(currentMapName, player.getUniqueId());
+            if (existingPb == null || elapsed < existingPb) {
+                isNewPb = true;
+                pbManager.setPersonalBest(currentMapName, player.getUniqueId(), elapsed);
+            }
+        }
+
+        String timeStr = String.format("%02d:%02d:%03d", minutes, seconds, millis);
+        if (isNewPb) {
+            player.sendMessage("§aFinish! Time: §e" + timeStr + " §a(NEW PERSONAL BEST!)");
+        } else {
+            player.sendMessage("§aFinish! Time: §e" + timeStr);
+        }
 
         gameStartTime = 0;
         isGameRunning = false;
+        currentMapName = null;
     }
 
     public boolean isGameRunning() {

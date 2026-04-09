@@ -14,6 +14,7 @@ public final class DeathRun extends JavaPlugin {
     private DeathRunCommand commandExecutor;
     private PlayerListener playerListener;
     private MapRecognizer mapRecognizer;
+    private PersonalBestManager pbManager;
 
     @Override
     public void onEnable() {
@@ -24,6 +25,8 @@ public final class DeathRun extends JavaPlugin {
 
         mapRecognizer = new MapRecognizer(this);
         
+        pbManager = new PersonalBestManager(this);
+        
         for (Map.Entry<String, String> entry : configManager.getAllMapWorlds().entrySet()) {
             String mapName = entry.getKey();
             String worldName = entry.getValue();
@@ -32,7 +35,8 @@ public final class DeathRun extends JavaPlugin {
             mapRecognizer.registerMap(mapName, worldName, spawn);
         }
 
-        commandExecutor = new DeathRunCommand(configManager, gameManager, mapRecognizer);
+        commandExecutor = new DeathRunCommand(configManager, gameManager, mapRecognizer, pbManager);
+        gameManager.setPbManager(pbManager);
         getCommand("start").setExecutor(commandExecutor);
         getCommand("dr").setExecutor(commandExecutor);
 

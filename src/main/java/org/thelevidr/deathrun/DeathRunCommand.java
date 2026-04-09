@@ -9,11 +9,21 @@ public class DeathRunCommand implements CommandExecutor {
     private final ConfigManager configManager;
     private final GameManager gameManager;
     private final MapRecognizer mapRecognizer;
+    private PersonalBestManager pbManager;
 
     public DeathRunCommand(ConfigManager configManager, GameManager gameManager, MapRecognizer mapRecognizer) {
+        this(configManager, gameManager, mapRecognizer, null);
+    }
+
+    public DeathRunCommand(ConfigManager configManager, GameManager gameManager, MapRecognizer mapRecognizer, PersonalBestManager pbManager) {
         this.configManager = configManager;
         this.gameManager = gameManager;
         this.mapRecognizer = mapRecognizer;
+        this.pbManager = pbManager;
+    }
+
+    public void setPbManager(PersonalBestManager pbManager) {
+        this.pbManager = pbManager;
     }
 
     @Override
@@ -47,7 +57,46 @@ public class DeathRunCommand implements CommandExecutor {
             return true;
         }
 
-        sender.sendMessage("§cUnknown subcommand. Use: reload");
+        if (args[0].equalsIgnoreCase("pb")) {
+            if (!(sender instanceof Player)) {
+                sender.sendMessage("This command can only be used by players.");
+                return true;
+            }
+            return handlePbCommand((Player) sender, args);
+        }
+
+        sender.sendMessage("§cUnknown subcommand. Use: reload, pb");
+        return true;
+    }
+
+    private boolean handlePbCommand(Player player, String[] args) {
+        if (pbManager == null) {
+            player.sendMessage("§cPersonal best system not available.");
+            return true;
+        }
+
+        String mapName;
+        if (args.length > 1) {
+            mapName = args[1];
+            if (!configManager.hasMap(mapName)) {
+                player.sendMessage("§cMap not found: " + mapName);
+                return true;
+            }
+        } else {
+            String worldName = player.getWorld().getName();
+            mapName = mapRecognizer.getMapName(worldName);
+            if (mapName == null) {
+                player.sendMessage("§cCould not detect map. Please specify: /dr pb <map>");
+                return true;
+            }
+        }
+
+        Long pb = pbManager.getPersonalBest(mapName, player.getUniqueId());
+        if (pb == null) {
+            player.sendMessage("§eMap: §a" + mapName + " §c- No personal best yet!");
+        } else {
+            player.sendMessage("§eMap: §a" + mapName + " §aPersonal Best: §e" + pbManager.formatTime(pb));
+        }
         return true;
     }
 
