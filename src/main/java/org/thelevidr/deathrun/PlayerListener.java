@@ -5,6 +5,7 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
@@ -80,6 +81,17 @@ public class PlayerListener implements Listener {
         Location toLoc = event.getTo();
         String world = toLoc.getWorld().getName();
         
+        if (toLoc.getBlock().isLiquid()) {
+            Location spawn = mapRecognizer.getSpawnLocation(toLoc.getWorld());
+            if (spawn != null) {
+                player.teleport(spawn);
+            }
+            player.sendTitle("§cDIED", "§7You drowned", 10, 30, 10);
+            return;
+        }
+        
+
+        
         int x = toLoc.getBlockX();
         int y = toLoc.getBlockY() - 1;
         int z = toLoc.getBlockZ();
@@ -110,5 +122,55 @@ public class PlayerListener implements Listener {
             }
         }
         return -1;
+    }
+
+    @EventHandler
+    public void onPlayerDamage(EntityDamageEvent event) {
+        if (!(event.getEntity() instanceof Player)) return;
+        Player player = (Player) event.getEntity();
+
+        if (!gameManager.isGameRunning()) {
+            if (event.getCause() == EntityDamageEvent.DamageCause.FALL) {
+                event.setCancelled(true);
+            }
+            return;
+        }
+
+        EntityDamageEvent.DamageCause cause = event.getCause();
+
+        if (cause == EntityDamageEvent.DamageCause.FIRE || cause == EntityDamageEvent.DamageCause.FIRE_TICK) {
+            Location spawn = mapRecognizer.getSpawnLocation(player.getWorld());
+            if (spawn != null) {
+                player.teleport(spawn);
+            }
+            player.setFireTicks(0);
+            event.setCancelled(true);
+            player.sendTitle("§cDIED", "§7You died to fire", 10, 30, 10);
+            return;
+        }
+
+        if (cause == EntityDamageEvent.DamageCause.FALL) {
+            event.setCancelled(true);
+            if (event.getDamage() > 20) {
+                Location spawn = mapRecognizer.getSpawnLocation(player.getWorld());
+                if (spawn != null) {
+                    player.teleport(spawn);
+                }
+                player.sendTitle("§cDIED", "§7You fell to your death", 10, 30, 10);
+            }
+        }
+
+        if (cause == EntityDamageEvent.DamageCause.DROWNING || cause == EntityDamageEvent.DamageCause.CONTACT) {
+            Location loc = player.getLocation();
+            boolean inWater = loc.getBlock().isLiquid();
+            if (inWater || loc.getBlockY() < 0) {
+                Location spawn = mapRecognizer.getSpawnLocation(player.getWorld());
+                if (spawn != null) {
+                    player.teleport(spawn);
+                }
+                event.setCancelled(true);
+                player.sendTitle("§cDIED", "§7You drowned", 10, 30, 10);
+            }
+        }
     }
 }
