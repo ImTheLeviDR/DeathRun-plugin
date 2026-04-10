@@ -1,74 +1,32 @@
 map:
   DR_HauntedManor:
-    name: "Haunted Manor"
+    name: Haunted Manor
     spawn:
       x: -209.5
       y: 10
       z: 3.5
-      world: "DR_HauntedManor"
-      facing: "west"
+      world: DR_HauntedManor
+      facing: west
     glass:
       origin:
         x: -213
         y: 10
         z: -2
-        world: "DR_HauntedManor"
+        world: DR_HauntedManor
       constant: 1
       param1: 8
       param2: 8
-    finish:
-      1:
-        x: -368
-        y: 25
-        z: 127
-        world: "DR_HauntedManor"
-      2:
-        x: -368
-        y: 27
-        z: 120
-        world: "DR_HauntedManor"
     effects:
       jump:
-        1:
+        '1':
           pos:
-            1:
-              x: -261
-              y: 17
-              z: 42
-              world: "DR_HauntedManor"
-            2:
+            '1':
+              world: DR_HauntedManor
               x: -264
-              y: 17
+              z: 42
+            '2':
+              world: DR_HauntedManor
+              x: -261
               z: 45
-              world: "DR_HauntedManor"
-          amplifier: 12
-          duration: 1
-        2:
-          pos:
-            1:
-              x: -168
-              y: 31
-              z: 107
-              world: "DR_HauntedManor"
-            2:
-              x: -164
-              y: 31
-              z: 108
-              world: "DR_HauntedManor"
-          amplifier: 8
-          duration: 4
-      speed:
-        1:
-          pos:
-            1:
-              x: -328
-              y: 24
-              z: 120
-              world: "DR_HauntedManor"
-            2:
-              x: -327
-              y: 24
-              z: 127
-              world: "DR_HauntedManor"
-          amplifier: 12
-          duration: 4
+          amplifier: 11
+          duration: 20
