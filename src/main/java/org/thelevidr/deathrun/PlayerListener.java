@@ -152,6 +152,11 @@ public class PlayerListener implements Listener {
         }
 
         if (cause == EntityDamageEvent.DamageCause.FALL) {
+            Location loc = player.getLocation();
+            boolean inCobweb = loc.getBlock().getType() == Material.WEB;
+            if (inCobweb) {
+                return;
+            }
             event.setCancelled(true);
             if (event.getDamage() > 20) {
                 Location spawn = mapRecognizer.getSpawnLocation(player.getWorld());
