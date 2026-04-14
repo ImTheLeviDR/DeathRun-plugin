@@ -15,6 +15,7 @@ public final class DeathRun extends JavaPlugin {
     private PlayerListener playerListener;
     private MapRecognizer mapRecognizer;
     private PersonalBestManager pbManager;
+    private StrafeManager strafeManager;
 
     @Override
     public void onEnable() {
@@ -37,6 +38,11 @@ public final class DeathRun extends JavaPlugin {
 
         commandExecutor = new DeathRunCommand(configManager, gameManager, mapRecognizer, pbManager);
         gameManager.setPbManager(pbManager);
+        
+        strafeManager = new StrafeManager(this);
+        getServer().getPluginManager().registerEvents(strafeManager, this);
+        gameManager.setStrafeManager(strafeManager);
+
         getCommand("start").setExecutor(commandExecutor);
         getCommand("dr").setExecutor(commandExecutor);
 

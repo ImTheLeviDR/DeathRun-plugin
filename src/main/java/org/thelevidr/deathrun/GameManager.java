@@ -12,6 +12,7 @@ public class GameManager {
     private final JavaPlugin plugin;
     private final ConfigManager configManager;
     private PersonalBestManager pbManager;
+    private StrafeManager strafeManager;
     private long gameStartTime = 0;
     private boolean isGameRunning = false;
     private Location glassOrigin;
@@ -28,6 +29,10 @@ public class GameManager {
 
     public void setPbManager(PersonalBestManager pbManager) {
         this.pbManager = pbManager;
+    }
+
+    public void setStrafeManager(StrafeManager strafeManager) {
+        this.strafeManager = strafeManager;
     }
 
     public void startGame(String mapName) {
@@ -127,6 +132,9 @@ public class GameManager {
                     // Hardcode 3000ms visual, or just say "GO!"
                     player.sendTitle("§aRUN!", "", 0, 20, 0);
                     player.playSound(player.getLocation(), Sound.ENTITY_ENDERDRAGON_AMBIENT, 1.0F, 1.0F);
+                    if (strafeManager != null) {
+                        strafeManager.giveStrafes(player);
+                    }
                 }
                 if (glassOrigin != null) {
                     setBlocksByConstant(glassOrigin, glassConstant, glassParam1, glassParam2, Material.AIR, (byte) 0);
@@ -236,6 +244,10 @@ public class GameManager {
         Location spawnLocation = configManager.getSpawnLocation();
         if (spawnLocation != null) {
             player.teleport(spawnLocation);
+        }
+        
+        if (strafeManager != null) {
+            strafeManager.removeStrafes(player);
         }
 
         boolean isNewPb = false;
