@@ -55,6 +55,7 @@ public class PlayerListener implements Listener {
                     if (spawn != null) {
                         player.teleport(spawn);
                     }
+                    gameManager.stopActionBarTimerPublic();
                 }
             }
         }

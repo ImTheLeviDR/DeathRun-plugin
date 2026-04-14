@@ -18,6 +18,7 @@ public class GameManager {
     private int glassParam1;
     private int glassParam2;
     private String currentMapName;
+    private int actionBarTaskId = -1;
 
     public GameManager(JavaPlugin plugin, ConfigManager configManager) {
         this.plugin = plugin;
@@ -49,6 +50,36 @@ public class GameManager {
     public void reload() {
         gameStartTime = 0;
         isGameRunning = false;
+        stopActionBarTimer();
+    }
+
+    private void startActionBarTimer() {
+        if (actionBarTaskId != -1) return;
+        actionBarTaskId = plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
+            if (!isGameRunning || gameStartTime == 0) return;
+            long elapsed = System.currentTimeMillis() - gameStartTime;
+            long minutes = (elapsed / 60000) % 60;
+            long seconds = (elapsed / 1000) % 60;
+            long millis = elapsed % 1000;
+            String timeStr = String.format("%02d:%02d:%03d", minutes, seconds, millis);
+            for (Player player : plugin.getServer().getOnlinePlayers()) {
+                player.sendActionBar("§e" + timeStr);
+            }
+        }, 0L, 1L).getTaskId();
+    }
+
+    public void stopActionBarTimerPublic() {
+        if (actionBarTaskId != -1) {
+            plugin.getServer().getScheduler().cancelTask(actionBarTaskId);
+            actionBarTaskId = -1;
+        }
+        for (Player player : plugin.getServer().getOnlinePlayers()) {
+            player.sendActionBar("");
+        }
+    }
+
+    private void stopActionBarTimer() {
+        stopActionBarTimerPublic();
     }
 
     private void startCountdown() {
@@ -80,6 +111,7 @@ public class GameManager {
                     }
                     gameStartTime = System.currentTimeMillis();
                     isGameRunning = true;
+                    startActionBarTimer();
                 }, 20L);
             }, 20L);
         }, 20L);
@@ -202,6 +234,7 @@ public class GameManager {
         gameStartTime = 0;
         isGameRunning = false;
         currentMapName = null;
+        stopActionBarTimer();
     }
 
     public boolean isGameRunning() {
