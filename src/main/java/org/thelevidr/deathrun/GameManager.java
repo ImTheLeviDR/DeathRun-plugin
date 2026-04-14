@@ -126,6 +126,7 @@ public class GameManager {
                 for (Player player : plugin.getServer().getOnlinePlayers()) {
                     // Hardcode 3000ms visual, or just say "GO!"
                     player.sendTitle("§aRUN!", "", 0, 20, 0);
+                    player.playSound(player.getLocation(), Sound.ENTITY_ENDERDRAGON_AMBIENT, 1.0F, 1.0F);
                 }
                 if (glassOrigin != null) {
                     setBlocksByConstant(glassOrigin, glassConstant, glassParam1, glassParam2, Material.AIR, (byte) 0);
