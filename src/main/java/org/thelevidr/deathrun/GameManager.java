@@ -2,6 +2,7 @@ package org.thelevidr.deathrun;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
@@ -83,6 +84,7 @@ public class GameManager {
     }
 
     private void startCountdown() {
+        // We do all the heavy lifting (teleports) first
         Location spawn = configManager.getSpawnLocation();
         for (Player player : plugin.getServer().getOnlinePlayers()) {
             if (spawn != null && player.getLocation().distance(spawn) > 10) {
@@ -90,31 +92,51 @@ public class GameManager {
             }
         }
 
+        // Capture the time AFTER the laggy teleports
+        final long countdownStartTime = System.currentTimeMillis();
+
         for (Player player : plugin.getServer().getOnlinePlayers()) {
-            player.sendTitle("§a3", "", 0, 20, 0);
+            player.sendTitle("§a➌", "§7seconds to start!", 0, 21, 0);
+            player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0F, 0.5F);
         }
 
-        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-            for (Player player : plugin.getServer().getOnlinePlayers()) {
-                player.sendTitle("§62", "", 0, 20, 0);
-            }
-            plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+        final int[] taskIdHolder = new int[1];
+        final boolean[] twoSent = {false};
+        final boolean[] oneSent = {false};
+
+        taskIdHolder[0] = plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
+            long elapsed = System.currentTimeMillis() - countdownStartTime;
+
+            if (elapsed >= 1000 && !twoSent[0]) {
+                twoSent[0] = true;
                 for (Player player : plugin.getServer().getOnlinePlayers()) {
-                    player.sendTitle("§c1", "", 0, 20, 0);
+                    player.sendTitle("§6➋", "§7seconds to start!", 0, 21, 0);
+                    player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0F, 0.75F);
                 }
-                plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-                    for (Player player : plugin.getServer().getOnlinePlayers()) {
-                        player.sendTitle("§aRUN!", "", 0, 20, 0);
-                    }
-                    if (glassOrigin != null) {
-                        setBlocksByConstant(glassOrigin, glassConstant, glassParam1, glassParam2, Material.AIR, (byte) 0);
-                    }
-                    gameStartTime = System.currentTimeMillis();
-                    isGameRunning = true;
-                    startActionBarTimer();
-                }, 20L);
-            }, 20L);
-        }, 20L);
+            } else if (elapsed >= 2000 && !oneSent[0]) {
+                oneSent[0] = true;
+                for (Player player : plugin.getServer().getOnlinePlayers()) {
+                    player.sendTitle("§e➊", "§7seconds to start!", 0, 21, 0);
+                    player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0F, 1.0F);
+                }
+            } else if (elapsed >= 3000) {
+                // Cancel task
+                plugin.getServer().getScheduler().cancelTask(taskIdHolder[0]);
+
+                for (Player player : plugin.getServer().getOnlinePlayers()) {
+                    // Hardcode 3000ms visual, or just say "GO!"
+                    player.sendTitle("§aRUN!", "", 0, 20, 0);
+                }
+                if (glassOrigin != null) {
+                    setBlocksByConstant(glassOrigin, glassConstant, glassParam1, glassParam2, Material.AIR, (byte) 0);
+                }
+
+                // Set start time to exactly NOW so the race time is 100% accurate
+                gameStartTime = System.currentTimeMillis();
+                isGameRunning = true;
+                startActionBarTimer();
+            }
+        }, 1L, 1L).getTaskId();
     }
 
     private void setBlocksInRegion(Location loc1, Location loc2, Material material, byte data) {
