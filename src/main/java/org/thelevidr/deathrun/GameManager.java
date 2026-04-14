@@ -35,6 +35,10 @@ public class GameManager {
         this.strafeManager = strafeManager;
     }
 
+    public StrafeManager getStrafeManager() {
+        return strafeManager;
+    }
+
     public void startGame(String mapName) {
         this.currentMapName = mapName;
         String path = "map." + mapName;

@@ -55,6 +55,9 @@ public class PlayerListener implements Listener {
                     if (spawn != null) {
                         player.teleport(spawn);
                     }
+                    if (gameManager.getStrafeManager() != null) {
+                        gameManager.getStrafeManager().removeStrafes(player);
+                    }
                     gameManager.stopActionBarTimerPublic();
                 }
             }

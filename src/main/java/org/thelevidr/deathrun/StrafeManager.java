@@ -142,7 +142,7 @@ public class StrafeManager implements Listener {
     }
 
     private void startCooldown(Player p, int slot, String type) {
-        int cdSeconds = 20;
+        int cdSeconds = 60;
         
         ItemStack cdItem;
         if (type.equals("LEFT")) cdItem = getLeftCooldown(cdSeconds);
@@ -172,7 +172,7 @@ public class StrafeManager implements Listener {
         }
 
         item.setAmount(amount - 1);
-        p.updateInventory();
+        p.getInventory().setItem(slot, item);
         Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> updateCooldown(p, slot, type), 20);
     }
 
