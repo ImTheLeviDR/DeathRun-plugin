@@ -264,10 +264,11 @@ public class GameManager {
         }
 
         String timeStr = String.format("%02d:%02d:%03d", minutes, seconds, millis);
+        String displayName = configManager.getMapDisplayName(currentMapName);
         if (isNewPb) {
-            player.sendMessage("§aFinish! Time: §e" + timeStr + " §a(NEW PERSONAL BEST!)");
+            player.sendMessage("§aFinish on §b" + displayName + "§a! Time: §e" + timeStr + " §a(NEW PERSONAL BEST!)");
         } else {
-            player.sendMessage("§aFinish! Time: §e" + timeStr);
+            player.sendMessage("§aFinish on §b" + displayName + "§a! Time: §e" + timeStr);
         }
 
         gameStartTime = 0;

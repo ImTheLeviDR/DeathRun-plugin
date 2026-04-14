@@ -76,12 +76,14 @@ public class DeathRunCommand implements CommandExecutor {
         }
 
         String mapName;
+        String displayName;
         if (args.length > 1) {
             mapName = args[1];
             if (!configManager.hasMap(mapName)) {
                 player.sendMessage("§cMap not found: " + mapName);
                 return true;
             }
+            displayName = configManager.getMapDisplayName(mapName);
         } else {
             String worldName = player.getWorld().getName();
             mapName = mapRecognizer.getMapName(worldName);
@@ -89,13 +91,14 @@ public class DeathRunCommand implements CommandExecutor {
                 player.sendMessage("§cCould not detect map. Please specify: /dr pb <map>");
                 return true;
             }
+            displayName = configManager.getMapDisplayName(mapName);
         }
 
         Long pb = pbManager.getPersonalBest(mapName, player.getUniqueId());
         if (pb == null) {
-            player.sendMessage("§eMap: §a" + mapName + " §c- No personal best yet!");
+            player.sendMessage("§eMap: §a" + displayName + " §c- No personal best yet!");
         } else {
-            player.sendMessage("§eMap: §a" + mapName + " §aPersonal Best: §e" + pbManager.formatTime(pb));
+            player.sendMessage("§eMap: §a" + displayName + " §aPersonal Best: §e" + pbManager.formatTime(pb));
         }
         return true;
     }
@@ -117,8 +120,9 @@ public class DeathRunCommand implements CommandExecutor {
                 return true;
             }
             
+            String displayName = configManager.getMapDisplayName(mapName);
             if (!configManager.hasGlassLocations(mapName)) {
-                player.sendMessage("§cMap '" + mapName + "' does not have glass locations defined.");
+                player.sendMessage("§cMap '" + displayName + "' does not have glass locations defined.");
                 return true;
             }
             
@@ -133,8 +137,9 @@ public class DeathRunCommand implements CommandExecutor {
             return true;
         }
 
+        String displayName = configManager.getMapDisplayName(mapName);
         if (!configManager.hasGlassLocations(mapName)) {
-            player.sendMessage("§cMap does not have glass locations defined.");
+            player.sendMessage("§cMap '" + displayName + "' does not have glass locations defined.");
             return true;
         }
 

@@ -335,6 +335,15 @@ public class ConfigManager {
         return new ArrayList<>(merged.getConfigurationSection("map").getKeys(false));
     }
 
+    public String getMapDisplayName(String mapName) {
+        FileConfiguration merged = getMergedConfig();
+        String path = "map." + mapName + ".name";
+        if (merged.contains(path)) {
+            return merged.getString(path);
+        }
+        return mapName;
+    }
+
     public Map<String, String> getAllMapWorlds() {
         Map<String, String> result = new HashMap<>();
         FileConfiguration merged = getMergedConfig();
