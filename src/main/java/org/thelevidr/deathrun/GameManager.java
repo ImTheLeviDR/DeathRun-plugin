@@ -21,6 +21,10 @@ public class GameManager {
     private int glassParam2;
     private String currentMapName;
     private int actionBarTaskId = -1;
+    private int finishOrder = 0;
+
+    private static final String[] BARS = new String[]{"§c⬤§8⬤⬤⬤⬤⬤⬤⬤⬤⬤", "§c⬤⬤§8⬤⬤⬤⬤⬤⬤⬤⬤", "§c⬤⬤⬤§8⬤⬤⬤⬤⬤⬤⬤", "§e⬤⬤⬤⬤§8⬤⬤⬤⬤⬤⬤", "§e⬤⬤⬤⬤⬤§8⬤⬤⬤⬤⬤", "§a⬤⬤⬤⬤⬤⬤§8⬤⬤⬤⬤", "§a⬤⬤⬤⬤⬤⬤⬤§8⬤⬤⬤", "§a⬤⬤⬤⬤⬤⬤⬤⬤§8⬤⬤", "§a⬤⬤⬤⬤⬤⬤⬤⬤⬤§8⬤", "§a⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤"};
+    private static final String GREY_BAR = "§8⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤";
 
     public GameManager(JavaPlugin plugin, ConfigManager configManager) {
         this.plugin = plugin;
@@ -41,6 +45,7 @@ public class GameManager {
 
     public void startGame(String mapName) {
         this.currentMapName = mapName;
+        this.finishOrder = 0;
         String path = "map." + mapName;
 
         configManager.loadMapData(mapName);
@@ -68,14 +73,42 @@ public class GameManager {
         actionBarTaskId = plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
             if (!isGameRunning || gameStartTime == 0) return;
             long elapsed = System.currentTimeMillis() - gameStartTime;
-            long minutes = (elapsed / 60000) % 60;
-            long seconds = (elapsed / 1000) % 60;
-            long millis = elapsed % 1000;
-            String timeStr = String.format("%02d:%02d:%03d", minutes, seconds, millis);
             for (Player player : plugin.getServer().getOnlinePlayers()) {
-                player.sendActionBar("§e" + timeStr);
+                Long pb = pbManager != null ? pbManager.getPersonalBest(currentMapName, player.getUniqueId()) : null;
+                String actionBar = formatActionBar(elapsed, pb);
+                player.sendActionBar(actionBar);
             }
-        }, 0L, 1L).getTaskId();
+        }, 0L, 20L).getTaskId();
+    }
+
+    private String formatActionBar(long elapsed, Long pb) {
+        String timeStr = formatDuration(elapsed);
+        if (pb == null) {
+            return "§f" + timeStr;
+        }
+        boolean pbOver = elapsed >= pb;
+        String pbStrRaw = formatDuration(pb);
+        String pbStr = pbOver ? "§c§m" + pbStrRaw + "§r" : "§f" + pbStrRaw;
+        double remaining = 1.0 - Math.min(1.0, (double) elapsed / (double) pb);
+        int index = Math.max(0, Math.min(9, (int) Math.ceil(remaining * 10.0) - 1));
+        String bar = pbOver ? GREY_BAR : BARS[index];
+        return pbStr + "  " + bar + "§f  " + timeStr;
+    }
+
+    private String formatDuration(long timeMs) {
+        long minutes = (timeMs / 60000) % 60;
+        long seconds = (timeMs / 1000) % 60;
+        return String.format("%02d:%02d", minutes, seconds);
+    }
+
+    private String getOrdinal(int n) {
+        if (n % 100 >= 11 && n % 100 <= 13) return n + "th";
+        switch (n % 10) {
+            case 1: return n + "st";
+            case 2: return n + "nd";
+            case 3: return n + "rd";
+            default: return n + "th";
+        }
     }
 
     public void stopActionBarTimerPublic() {
@@ -135,7 +168,7 @@ public class GameManager {
                 for (Player player : plugin.getServer().getOnlinePlayers()) {
                     // Hardcode 3000ms visual, or just say "GO!"
                     player.sendTitle("§aRUN!", "", 0, 20, 0);
-                    player.playSound(player.getLocation(), Sound.ENTITY_ENDERDRAGON_AMBIENT, 1.0F, 1.0F);
+                    player.playSound(player.getLocation(), Sound.ENTITY_ELDER_GUARDIAN_CURSE, 1.0F, 1.0F);
                     if (strafeManager != null) {
                         strafeManager.giveStrafes(player);
                     }
@@ -240,6 +273,7 @@ public class GameManager {
     }
 
     private void finishPlayer(Player player) {
+        finishOrder++;
         long elapsed = System.currentTimeMillis() - gameStartTime;
         long minutes = (elapsed / 60000) % 60;
         long seconds = (elapsed / 1000) % 60;
@@ -254,21 +288,27 @@ public class GameManager {
             strafeManager.removeStrafes(player);
         }
 
+        Long existingPb = null;
         boolean isNewPb = false;
         if (pbManager != null && currentMapName != null) {
-            Long existingPb = pbManager.getPersonalBest(currentMapName, player.getUniqueId());
+            existingPb = pbManager.getPersonalBest(currentMapName, player.getUniqueId());
             if (existingPb == null || elapsed < existingPb) {
                 isNewPb = true;
                 pbManager.setPersonalBest(currentMapName, player.getUniqueId(), elapsed);
             }
         }
 
-        String timeStr = String.format("%02d:%02d:%03d", minutes, seconds, millis);
-        String displayName = configManager.getMapDisplayName(currentMapName);
-        if (isNewPb) {
-            player.sendMessage("§aFinish on §b" + displayName + "§a! Time: §e" + timeStr + " §a(NEW PERSONAL BEST!)");
+        String timeStr = String.format("%02d:%02d.%03d", minutes, seconds, millis);
+        
+        if (isNewPb && existingPb != null) {
+            long diffSeconds = (existingPb - elapsed) / 1000;
+            String newTimeStr = String.format("%02d:%02d", minutes, seconds);
+            player.sendMessage("§8▌§cDeathRun §8| §3NEW PERSONAL BEST! §bYou beat your old record by §e" + diffSeconds + " §bseconds, your new record is §e" + newTimeStr + "§b!");
+        } else if (isNewPb) {
+            String newTimeStr = String.format("%02d:%02d", minutes, seconds);
+            player.sendMessage("§8▌§cDeathRun §8| §3NEW PERSONAL BEST! §byour new record is §e" + newTimeStr + "§b!");
         } else {
-            player.sendMessage("§aFinish on §b" + displayName + "§a! Time: §e" + timeStr);
+            player.sendMessage("§8▌§cDeathRun §8| §9" + player.getName() + " §bfinished §b" + getOrdinal(finishOrder) + "§3. §7(" + timeStr + ")");
         }
 
         gameStartTime = 0;
