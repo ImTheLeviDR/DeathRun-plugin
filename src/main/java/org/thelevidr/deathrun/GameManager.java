@@ -303,13 +303,15 @@ public class GameManager {
         if (isNewPb && existingPb != null) {
             long diffSeconds = (existingPb - elapsed) / 1000;
             String newTimeStr = String.format("%02d:%02d", minutes, seconds);
-            player.sendMessage("§8▌§cDeathRun §8| §3NEW PERSONAL BEST! §bYou beat your old record by §e" + diffSeconds + " §bseconds, your new record is §e" + newTimeStr + "§b!");
+            player.sendMessage("§8▌ §cDeathRun §8§l| §3NEW PERSONAL BEST! §bYou beat your old record by §e" + diffSeconds + " §bseconds, your new record is §e" + newTimeStr + "§b!");
         } else if (isNewPb) {
             String newTimeStr = String.format("%02d:%02d", minutes, seconds);
-            player.sendMessage("§8▌§cDeathRun §8| §3NEW PERSONAL BEST! §byour new record is §e" + newTimeStr + "§b!");
+            player.sendMessage("§8▌ §cDeathRun §8§l| §3NEW PERSONAL BEST! §byour new record is §e" + newTimeStr + "§b!");
         } else {
-            player.sendMessage("§8▌§cDeathRun §8| §9" + player.getName() + " §bfinished §b" + getOrdinal(finishOrder) + "§3. §7(" + timeStr + ")");
+            player.sendMessage("§8▌ §cDeathRun §8§l| §9" + player.getName() + " §bfinished §b" + getOrdinal(finishOrder) + "§3. §7(" + timeStr + ")");
         }
+        
+        player.sendActionBar("§7You finished in §f" + timeStr);
 
         gameStartTime = 0;
         isGameRunning = false;
